@@ -1,0 +1,144 @@
+.ShoutboxWidget {
+    &-messages {
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 10px;
+        padding-right: 2px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--control-color) transparent;
+        &::-webkit-scrollbar       { width: 4px; }
+        &::-webkit-scrollbar-thumb { background: var(--control-color); border-radius: 2px; }
+    }
+
+    &-message {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: .85rem;
+        line-height: 1.4;
+
+        &-avatar {
+            flex-shrink: 0;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        &-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        &-meta {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 2px;
+        }
+
+        &-username {
+            font-weight: 700;
+            font-size: .8rem;
+            color: var(--primary-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+            text-decoration: none;
+            &:hover { text-decoration: underline; }
+        }
+
+        &-time {
+            font-size: .7rem;
+            color: var(--muted-more-color);
+            white-space: nowrap;
+        }
+
+        &-text {
+            word-break: break-word;
+            color: var(--text-color);
+        }
+
+        &-delete {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--muted-more-color);
+            padding: 0 2px;
+            font-size: .75rem;
+            opacity: 0;
+            transition: opacity .15s, color .15s;
+            &:hover { color: var(--control-danger-color); }
+        }
+
+        &:hover &-delete { opacity: 1; }
+    }
+
+    &-empty {
+        text-align: center;
+        color: var(--muted-color);
+        font-size: .8rem;
+        padding: 12px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+    }
+
+    &-form {
+        display: flex;
+        gap: 6px;
+        align-items: stretch;   
+        input {
+            flex: 1;
+            padding: 6px 10px;
+            border-radius: @border-radius;
+            border: 1px solid var(--control-color);
+            background: var(--body-bg);
+            color: var(--text-color);
+            font-size: .85rem;
+            font-family: inherit;
+            outline: none;
+            min-width: 0;
+            &:focus { border-color: var(--primary-color); }
+        }
+
+        button {
+            flex-shrink: 0;
+            padding: 0 14px;
+            border-radius: @border-radius;
+            background: var(--primary-color);
+            color: #fff;
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-size: .85rem;
+            font-weight: 600;
+            font-family: inherit;
+            transition: opacity .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            &:hover    { opacity: .85; }
+            &:disabled { opacity: .5; cursor: not-allowed; }
+        }
+    }
+
+    &-login-hint {
+        font-size: .85rem;
+        color: var(--muted-color);
+        text-align: center;
+        padding: 4px 0 2px;
+    }
+}
+
+.sideNav .ShoutboxWidget-form button,
+.IndexPage-nav .ShoutboxWidget-form button,
+.FofWidgets-sideNavAlt .ShoutboxWidget-form button {
+    padding: 0 10px;
+    .ShoutboxWidget-send-label { display: none; }
+}
