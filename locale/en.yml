@@ -5,7 +5,9 @@ linkrobins-shoutbox:
       placeholder: Say something...
       send: Send
       login_to_shout: Log in to shout!
+      delete: Delete
       delete_confirm: Delete this shout?
+      delete_error: Could not delete shout. Please try again.
       load_error: Could not load shouts.
   admin:
     settings:

@@ -1,0 +1,2 @@
+(()=>{"use strict";app.initializers.add("linkrobins/shoutbox",function(){app.widgets&&app.widgets.add({key:"linkrobins-shoutbox",component:{view:function(){return null}},placement:"start_top",isUnique:!0,isDisabled:!1},"linkrobins-shoutbox"),app.registry.for("linkrobins-shoutbox").registerSetting({setting:"linkrobins-shoutbox.height",type:"number",min:100,max:1e3,label:app.translator.trans("linkrobins-shoutbox.admin.settings.height_label"),help:app.translator.trans("linkrobins-shoutbox.admin.settings.height_help")})})})(),module.exports={};
+//# sourceMappingURL=admin.js.map

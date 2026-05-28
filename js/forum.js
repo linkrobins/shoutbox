@@ -49,12 +49,13 @@
 
             oninit(vnode) {
                 super.oninit(vnode);
-                this.shouts  = [];
-                this.userMap = {};
-                this.loading = true;
-                this.sending = false;
-                this.input   = '';
-                this._poll   = null;
+                this.shouts    = [];
+                this.userMap   = {};
+                this.loading   = true;
+                this.sending   = false;
+                this.loadError = false;
+                this.input     = '';
+                this._poll     = null;
                 this._load();
             }
 
@@ -66,9 +67,10 @@
                 this.loading = true;
                 app.request({ method: 'GET', url: app.forum.attribute('apiUrl') + '/shoutbox' })
                     .then((res) => {
-                        this.shouts  = res.data || [];
-                        this.userMap = buildUserMap(res.included);
-                        this.loading = false;
+                        this.shouts    = res.data || [];
+                        this.userMap   = buildUserMap(res.included);
+                        this.loading   = false;
+                        this.loadError = false;
                         m.redraw();
                         setTimeout(() => this._scrollBottom(), 50);
                         if (!this._poll) {
@@ -78,11 +80,16 @@
                                         this.shouts  = res.data || [];
                                         this.userMap = buildUserMap(res.included);
                                         m.redraw();
-                                    }).catch(() => {});
+                                    }).catch((e) => { console.error('[linkrobins/shoutbox] poll refresh failed', e); });
                             }, 15000);
                         }
                     })
-                    .catch(() => { this.loading = false; m.redraw(); });
+                    .catch((e) => {
+                        console.error('[linkrobins/shoutbox] initial load failed', e);
+                        this.loading   = false;
+                        this.loadError = true;
+                        m.redraw();
+                    });
             }
 
             _scrollBottom() {
@@ -110,9 +117,25 @@
 
             _delete(id) {
                 if (!confirm(app.translator.trans('linkrobins-shoutbox.forum.widget.delete_confirm'))) return;
+                var index   = this.shouts.findIndex((s) => s.id === id);
+                var removed = index === -1 ? null : this.shouts[index];
+                this.shouts = this.shouts.filter((s) => s.id !== id);
+                m.redraw();
                 app.request({ method: 'DELETE', url: app.forum.attribute('apiUrl') + '/shoutbox/' + id })
-                    .then(() => { this.shouts = this.shouts.filter(s => s.id !== id); m.redraw(); })
-                    .catch(() => {});
+                    .catch((e) => {
+                        console.error('[linkrobins/shoutbox] delete failed', e);
+                        // Restore the optimistically-removed row and let the user know.
+                        if (removed && this.shouts.indexOf(removed) === -1) {
+                            this.shouts.splice(index, 0, removed);
+                        }
+                        m.redraw();
+                        if (app.alerts) {
+                            app.alerts.show(
+                                { type: 'error' },
+                                app.translator.trans('linkrobins-shoutbox.forum.widget.delete_error')
+                            );
+                        }
+                    });
             }
 
             view() {
@@ -123,6 +146,9 @@
                 if (this.loading) {
                     msgContent = m('div', { className: 'ShoutboxWidget-empty' },
                         m('i', { className: 'fas fa-spinner fa-spin' }));
+                } else if (this.loadError) {
+                    msgContent = m('div', { className: 'ShoutboxWidget-empty ShoutboxWidget-error' },
+                        app.translator.trans('linkrobins-shoutbox.forum.widget.load_error'));
                 } else if (!this.shouts.length) {
                     msgContent = m('div', { className: 'ShoutboxWidget-empty' },
                         loggedIn ? '💬' : '');
@@ -161,7 +187,7 @@
                                 attrs.canDelete
                                     ? m('button', {
                                         className: 'ShoutboxWidget-message-delete',
-                                        title: 'Delete',
+                                        title: app.translator.trans('linkrobins-shoutbox.forum.widget.delete'),
                                         onclick: () => this._delete(shout.id),
                                       }, m('i', { className: 'fas fa-times' }))
                                     : null
@@ -227,5 +253,3 @@
     });
 
 })();
-
-module.exports = {};
