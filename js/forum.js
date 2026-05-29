@@ -39,13 +39,21 @@
         return isNaN(h) || h < 100 ? 320 : h;
     }
 
-    app.initializers.add('linkrobins/shoutbox', function () {
-        if (!app.widgets) return;
+    // Resolve a core export from the registry, tolerating both the
+    // module-namespace form ({ default: X }) and the bare-value form (X).
+    function reg(id) {
+        var mod = null;
+        try { mod = flarum.reg.get('core', id); } catch (e) {}
+        return mod && mod.default ? mod.default : mod;
+    }
 
-        var Component = flarum.reg.get('core', 'common/Component');
-        if (!Component) return;
-
-        class ShoutboxWidget extends Component {
+    // The shared chat component: data loading + 15s polling + optimistic
+    // send/delete, plus the message list and composer. Used unchanged by both
+    // the sidebar widget and the standalone page. Attrs:
+    //   - height: fixed pixel height for the message area (widget)
+    //   - fill:   true to fill the available height instead (page)
+    function makeChat(Component) {
+        return class ShoutboxChat extends Component {
 
             oninit(vnode) {
                 super.oninit(vnode);
@@ -112,7 +120,18 @@
                         m.redraw();
                         setTimeout(() => this._scrollBottom(), 30);
                     })
-                    .catch(() => { this.sending = false; m.redraw(); });
+                    .catch((e) => {
+                        this.sending = false;
+                        m.redraw();
+                        // Surface the flood-control rejection so the failure
+                        // isn't silent (otherwise it just looks like the send
+                        // did nothing).
+                        var status = e && (e.status || (e.response && e.response.status));
+                        if ((status === 429 || status === '429') && app.alerts) {
+                            app.alerts.show({ type: 'error' },
+                                app.translator.trans('linkrobins-shoutbox.forum.widget.rate_limited'));
+                        }
+                    });
             }
 
             _delete(id) {
@@ -139,8 +158,9 @@
             }
 
             view() {
-                var loggedIn  = app.session && app.session.user;
-                var height    = getHeight();
+                var loggedIn = app.session && app.session.user;
+                var fill     = !!(this.attrs && this.attrs.fill);
+                var height   = (this.attrs && this.attrs.height) || getHeight();
 
                 var msgContent;
                 if (this.loading) {
@@ -154,8 +174,8 @@
                         loggedIn ? '💬' : '');
                 } else {
                     msgContent = m('div', {
-                        className: 'ShoutboxWidget-messages',
-                        style: 'height:' + height + 'px',
+                        className: 'ShoutboxWidget-messages' + (fill ? ' ShoutboxWidget-messages--fill' : ''),
+                        style: fill ? null : 'height:' + height + 'px',
                     },
                         this.shouts.map((shout) => {
                             var attrs  = shout.attributes || {};
@@ -226,30 +246,115 @@
                     );
                 }
 
-                return m('div', { className: 'FofWidgets-Widget ShoutboxWidget' },
-                    m('div', { className: 'FofWidgets-Widget-title' },
-                        m('span', { className: 'FofWidgets-Widget-title-icon' },
-                            m('i', { className: 'fas fa-comments' })
-                        ),
-                        m('span', { className: 'FofWidgets-Widget-title-label' },
-                            app.translator.trans('linkrobins-shoutbox.forum.widget.title')
-                        )
-                    ),
-                    m('div', { className: 'FofWidgets-Widget-content' },
-                        msgContent,
-                        inputArea
-                    )
-                );
+                // Wrap in a root element so this.element (and _scrollBottom's
+                // querySelector) resolves to a container, not the first child.
+                return m('div', { className: 'ShoutboxChat' + (fill ? ' ShoutboxChat--fill' : '') }, [
+                    msgContent,
+                    inputArea,
+                ]);
             }
+        };
+    }
+
+    app.initializers.add('linkrobins/shoutbox', function () {
+        var Component = reg('common/Component');
+        if (!Component) return;
+
+        var ShoutboxChat = makeChat(Component);
+
+        // Core components used by both the widget and the page.
+        var Page          = reg('common/components/Page');
+        var PageStructure = reg('forum/components/PageStructure');
+        var IndexSidebar  = reg('forum/components/IndexSidebar');
+        var LinkButton    = reg('common/components/LinkButton');
+        var Link          = reg('common/components/Link');
+
+        // --- Sidebar widget (fof/forum-widgets-core) ---------------------
+        // Mounts the shared chat; its title links through to the page.
+        if (app.widgets) {
+            class ShoutboxWidget extends Component {
+                view() {
+                    var title = app.translator.trans('linkrobins-shoutbox.forum.widget.title');
+                    return m('div', { className: 'FofWidgets-Widget ShoutboxWidget' },
+                        m('div', { className: 'FofWidgets-Widget-title' },
+                            m('span', { className: 'FofWidgets-Widget-title-icon' },
+                                m('i', { className: 'fas fa-bullhorn' })
+                            ),
+                            m('span', { className: 'FofWidgets-Widget-title-label' },
+                                Link
+                                    ? m(Link, {
+                                        href: app.route('linkrobins-shoutbox'),
+                                        className: 'ShoutboxWidget-titleLink',
+                                        title: app.translator.trans('linkrobins-shoutbox.forum.page_title'),
+                                    }, title)
+                                    : title
+                            )
+                        ),
+                        m('div', { className: 'FofWidgets-Widget-content' },
+                            m(ShoutboxChat, { height: getHeight() })
+                        )
+                    );
+                }
+            }
+
+            app.widgets.add({
+                key:        'linkrobins-shoutbox',
+                component:  ShoutboxWidget,
+                placement:  'start_top',
+                isUnique:   true,
+                isDisabled: false,
+            }, 'linkrobins-shoutbox');
         }
 
-        app.widgets.add({
-            key:        'linkrobins-shoutbox',
-            component:  ShoutboxWidget,
-            placement:  'start_top',
-            isUnique:   true,
-            isDisabled: false,
-        }, 'linkrobins-shoutbox');
+        // --- Standalone page at /shoutbox --------------------------------
+        if (Page) {
+            class ShoutboxPage extends Page {
+                oninit(vnode) {
+                    super.oninit(vnode);
+                    try { app.setTitle(app.translator.trans('linkrobins-shoutbox.forum.page_title')); } catch (e) {}
+                }
+
+                view() {
+                    var content = m('div', { className: 'ShoutboxPage-container' }, [
+                        m('div', { className: 'ShoutboxPage-header' },
+                            m('h1', { className: 'ShoutboxPage-title' }, [
+                                m('i', { className: 'fas fa-bullhorn' }), ' ',
+                                app.translator.trans('linkrobins-shoutbox.forum.page_title'),
+                            ])
+                        ),
+                        m('div', { className: 'ShoutboxPage-chat' },
+                            m(ShoutboxChat, { fill: true })
+                        ),
+                    ]);
+
+                    if (PageStructure && IndexSidebar) {
+                        return m(PageStructure, {
+                            className: 'IndexPage ShoutboxPage',
+                            sidebar:   function () { return m(IndexSidebar); },
+                        }, content);
+                    }
+                    return m('div', { className: 'IndexPage ShoutboxPage' }, content);
+                }
+            }
+
+            app.routes['linkrobins-shoutbox'] = { path: '/shoutbox', component: ShoutboxPage };
+        }
+
+        // --- Index sidebar nav link (visible to everyone) ----------------
+        try {
+            var extMod = flarum.reg.get('core', 'common/extend');
+            var extend = extMod && extMod.extend;
+            if (IndexSidebar && LinkButton && typeof extend === 'function') {
+                extend(IndexSidebar.prototype, 'navItems', function (items) {
+                    items.add('linkrobins-shoutbox', m(LinkButton, {
+                        href: app.route('linkrobins-shoutbox'),
+                        icon: 'fas fa-bullhorn',
+                    }, app.translator.trans('linkrobins-shoutbox.forum.nav')), 20);
+                });
+            }
+        } catch (e) {
+            console.warn('[linkrobins/shoutbox] could not add sidebar nav item:', e);
+        }
     });
 
 })();

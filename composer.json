@@ -18,7 +18,7 @@
             "title": "Link Robins Shoutbox",
             "category": "forum-widget",
             "icon": {
-                "name": "fas fa-comments",
+                "name": "fas fa-bullhorn",
                 "color": "#07adcc",
                 "backgroundColor": "#1a2535"
             }

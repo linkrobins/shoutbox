@@ -8,7 +8,10 @@ use LinkRobins\Shoutbox\Api\Controller\ListShoutsController;
 return [
     (new Extend\Frontend('forum'))
         ->js(__DIR__ . '/js/dist/forum.js')
-        ->css(__DIR__ . '/less/forum.less'),
+        ->css(__DIR__ . '/less/forum.less')
+        // Server-side route so /shoutbox is reachable by direct URL (serves
+        // the SPA shell); the matching client route is registered in forum.js.
+        ->route('/shoutbox', 'linkrobins-shoutbox'),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js'),

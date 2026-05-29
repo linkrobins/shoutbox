@@ -23,7 +23,17 @@
                 max:      1000,
                 label:    app.translator.trans('linkrobins-shoutbox.admin.settings.height_label'),
                 help:     app.translator.trans('linkrobins-shoutbox.admin.settings.height_help'),
-            });
+            })
+            .registerPermission({
+                icon:       'fas fa-bullhorn',
+                label:      app.translator.trans('linkrobins-shoutbox.admin.permissions.shout'),
+                permission: 'linkrobins-shoutbox.shout',
+            }, 'start', 95)
+            .registerPermission({
+                icon:       'fas fa-trash',
+                label:      app.translator.trans('linkrobins-shoutbox.admin.permissions.moderate'),
+                permission: 'linkrobins-shoutbox.moderate',
+            }, 'moderate', 95);
 
     });
 

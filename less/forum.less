@@ -142,3 +142,55 @@
     padding: 0 10px;
     .ShoutboxWidget-send-label { display: none; }
 }
+
+// Widget title links through to the standalone page; keep it looking like
+// the title (inherit colour) with just a hover underline as the affordance.
+.ShoutboxWidget-titleLink {
+    color: inherit;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+}
+
+// --- Standalone /shoutbox page ---------------------------------------
+
+.ShoutboxPage-header {
+    margin-bottom: 16px;
+}
+
+.ShoutboxPage-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    i { color: var(--primary-color); }
+}
+
+.ShoutboxPage-chat {
+    display: flex;
+    flex-direction: column;
+    height: ~"calc(100vh - 220px)";
+    min-height: 360px;
+    padding: 14px;
+    border: 1px solid var(--control-bg);
+    border-radius: 8px;
+    background: var(--body-bg);
+}
+
+// On the page the chat fills its container; the message list grows and
+// scrolls while the composer stays pinned at the bottom.
+.ShoutboxChat--fill {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.ShoutboxChat--fill > .ShoutboxWidget-messages--fill,
+.ShoutboxChat--fill > .ShoutboxWidget-empty {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+}
