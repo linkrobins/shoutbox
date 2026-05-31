@@ -3,6 +3,7 @@
 namespace LinkRobins\Shoutbox\Api\Controller;
 
 use Flarum\Http\RequestUtil;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Carbon;
 use Laminas\Diactoros\Response\JsonResponse;
 use LinkRobins\Shoutbox\Shout\Shout;
@@ -12,6 +13,10 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class ListShoutsController implements RequestHandlerInterface
 {
+    public function __construct(private CacheRepository $cache)
+    {
+    }
+
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $actor = RequestUtil::getActor($request);
@@ -26,8 +31,7 @@ class ListShoutsController implements RequestHandlerInterface
         // The latest-N list is identical for every viewer, so cache it briefly
         // to absorb the 15s polling herd. canDelete is per-actor, so it is
         // deliberately NOT cached -- it's applied to each row below.
-        $cache = resolve('cache.store');
-        $payload = $cache->remember('linkrobins-shoutbox.list.' . $limit, 5, function () use ($limit) {
+        $payload = $this->cache->remember(Shout::listCacheKey($limit), 5, function () use ($limit) {
             $shouts = Shout::with('user')
                 ->orderByDesc('created_at')
                 ->limit($limit)

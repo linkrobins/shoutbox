@@ -4,6 +4,7 @@ namespace LinkRobins\Shoutbox\Api\Controller;
 
 use Flarum\Http\RequestUtil;
 use Flarum\User\Exception\PermissionDeniedException;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use LinkRobins\Shoutbox\Shout\Shout;
@@ -13,12 +14,19 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class DeleteShoutController implements RequestHandlerInterface
 {
+    public function __construct(private CacheRepository $cache)
+    {
+    }
+
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $actor = RequestUtil::getActor($request);
         $actor->assertRegistered();
 
-        $id    = (int) ($request->getQueryParams()['id'] ?? 0);
+        // `id` is a URL path segment (/shoutbox/{id}); under Flarum's FastRoute
+        // stack path params live in the `routeParameters` request attribute, NOT
+        // the query string. Reading the query string always yielded 0 -> 404.
+        $id    = (int) ($request->getAttribute('routeParameters')['id'] ?? 0);
         $shout = Shout::find($id);
 
         if (!$shout) {
@@ -35,9 +43,7 @@ class DeleteShoutController implements RequestHandlerInterface
         $shout->delete();
 
         // Drop the cached list so the removal shows on the next poll.
-        $cache = resolve('cache.store');
-        $cache->forget('linkrobins-shoutbox.list.10');
-        $cache->forget('linkrobins-shoutbox.list.30');
+        Shout::bustListCache($this->cache);
 
         return new EmptyResponse(204);
     }
