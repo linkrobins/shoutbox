@@ -1,9 +1,9 @@
 <?php
 
 use Flarum\Extend;
-use LinkRobins\Shoutbox\Api\Controller\CreateShoutController;
-use LinkRobins\Shoutbox\Api\Controller\DeleteShoutController;
-use LinkRobins\Shoutbox\Api\Controller\ListShoutsController;
+use LinkRobins\Shoutbox\Access\ShoutPolicy;
+use LinkRobins\Shoutbox\Api\ShoutResource;
+use LinkRobins\Shoutbox\Shout\Shout;
 
 return [
     (new Extend\Frontend('forum'))
@@ -18,10 +18,12 @@ return [
 
     new Extend\Locales(__DIR__ . '/locale'),
 
-    (new Extend\Routes('api'))
-        ->get('/shoutbox',         'shoutbox.list',   ListShoutsController::class)
-        ->post('/shoutbox',        'shoutbox.create', CreateShoutController::class)
-        ->delete('/shoutbox/{id}', 'shoutbox.delete', DeleteShoutController::class),
+    // The 'shouts' API resource: standard JSON:API at /api/shouts (Index,
+    // Create, Delete). Replaces the hand-built JSON controllers.
+    new Extend\ApiResource(ShoutResource::class),
+
+    (new Extend\Policy())
+        ->modelPolicy(Shout::class, ShoutPolicy::class),
 
     (new Extend\Settings())
         ->default('linkrobins-shoutbox.height', '320')
