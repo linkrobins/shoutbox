@@ -12,8 +12,22 @@ linkrobins-shoutbox:
       delete_error: Could not delete shout. Please try again.
       load_error: Could not load shouts.
       rate_limited: You're posting too fast. Please wait a moment.
+      unknown_user: User
+      time_seconds: "{count}s"
+      time_minutes: "{count}m"
+      time_hours: "{count}h"
+  # Server-only messages (API validation); resolved backend-side, not delivered
+  # to the frontend bundle.
+  api:
+    empty_content: You must enter a message.
+    rate_limited: You are posting too fast. Please wait a moment.
   admin:
     settings:
+      display_mode_label: Display mode
+      display_mode_help: Choose where the shoutbox appears on the forum.
+      display_mode_both: Page and widget
+      display_mode_widget: Widget only
+      display_mode_page: Page only
       height_label: Messages height (px)
       height_help: Height of the messages area in pixels. Default is 320.
     permissions:

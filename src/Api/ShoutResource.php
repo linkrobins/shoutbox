@@ -7,6 +7,7 @@ use Flarum\Api\Resource\AbstractDatabaseResource;
 use Flarum\Api\Schema;
 use Flarum\Api\Sort\SortColumn;
 use Flarum\Foundation\ValidationException;
+use Flarum\Locale\TranslatorInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use LinkRobins\Shoutbox\Shout\Shout;
@@ -17,6 +18,11 @@ use Tobyz\JsonApiServer\Context;
  */
 class ShoutResource extends AbstractDatabaseResource
 {
+    public function __construct(
+        protected TranslatorInterface $translator
+    ) {
+    }
+
     /** Minimum seconds between shouts from the same user (flood control). */
     const COOLDOWN_SECONDS = 3;
 
@@ -66,7 +72,7 @@ class ShoutResource extends AbstractDatabaseResource
     public function creating(object $model, Context $context): ?object
     {
         if (trim((string) $model->content) === '') {
-            throw new ValidationException(['content' => ['You must enter a message.']]);
+            throw new ValidationException(['content' => [$this->translator->trans('linkrobins-shoutbox.api.empty_content')]]);
         }
 
         $tooSoon = Shout::where('user_id', $context->getActor()->id)
@@ -74,7 +80,7 @@ class ShoutResource extends AbstractDatabaseResource
             ->exists();
 
         if ($tooSoon) {
-            throw new ValidationException(['content' => ['You are posting too fast. Please wait a moment.']]);
+            throw new ValidationException(['content' => [$this->translator->trans('linkrobins-shoutbox.api.rate_limited')]]);
         }
 
         return $model;

@@ -3,6 +3,7 @@
 use Flarum\Extend;
 use LinkRobins\Shoutbox\Access\ShoutPolicy;
 use LinkRobins\Shoutbox\Api\ShoutResource;
+use LinkRobins\Shoutbox\Content\ShoutboxPage;
 use LinkRobins\Shoutbox\Shout\Shout;
 
 return [
@@ -11,7 +12,8 @@ return [
         ->css(__DIR__ . '/less/forum.less')
         // Server-side route so /shoutbox is reachable by direct URL (serves
         // the SPA shell); the matching client route is registered in forum.js.
-        ->route('/shoutbox', 'linkrobins-shoutbox'),
+        // The content handler 404s the page in 'widget'-only display mode.
+        ->route('/shoutbox', 'linkrobins-shoutbox', ShoutboxPage::class),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js'),
@@ -27,5 +29,10 @@ return [
 
     (new Extend\Settings())
         ->default('linkrobins-shoutbox.height', '320')
-        ->serializeToForum('shoutboxHeight', 'linkrobins-shoutbox.height'),
+        ->serializeToForum('shoutboxHeight', 'linkrobins-shoutbox.height')
+        // Where the shoutbox appears: 'both' (page + widget), 'widget' (widget
+        // only), or 'page' (page only). The forum frontend gates the route,
+        // sidebar nav link and the fof widget on this value.
+        ->default('linkrobins-shoutbox.display_mode', 'both')
+        ->serializeToForum('shoutboxDisplayMode', 'linkrobins-shoutbox.display_mode'),
 ];

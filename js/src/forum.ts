@@ -8,14 +8,17 @@ import LinkButton from 'flarum/common/components/LinkButton';
 import Link from 'flarum/common/components/Link';
 import { extend } from 'flarum/common/extend';
 
+// Compact relative time. Called from view() (render time), so resolving the
+// translator here is safe and locale-correct. The suffixes are translatable;
+// the date fallback uses the forum's locale.
 function formatTime(iso: string): string {
     if (!iso) return '';
     const d = new Date(iso);
     const diff = Math.floor((Date.now() - d.getTime()) / 1000);
-    if (diff < 60) return diff + 's';
-    if (diff < 3600) return Math.floor(diff / 60) + 'm';
-    if (diff < 86400) return Math.floor(diff / 3600) + 'h';
-    return d.toLocaleDateString();
+    if (diff < 60) return app.translator.trans('linkrobins-shoutbox.forum.widget.time_seconds', { count: diff }) as string;
+    if (diff < 3600) return app.translator.trans('linkrobins-shoutbox.forum.widget.time_minutes', { count: Math.floor(diff / 60) }) as string;
+    if (diff < 86400) return app.translator.trans('linkrobins-shoutbox.forum.widget.time_hours', { count: Math.floor(diff / 3600) }) as string;
+    return d.toLocaleDateString((app as any).data?.locale || undefined);
 }
 
 function avatarColor(name: string): string {
@@ -44,6 +47,24 @@ function userRoute(user: any): string | null {
 function getHeight(): number {
     const h = parseInt(app.forum.attribute('shoutboxHeight') || '320', 10);
     return isNaN(h) || h < 100 ? 320 : h;
+}
+
+// Admin-controlled placement: 'both' (page + widget), 'widget' (widget only),
+// or 'page' (page only). Unknown/missing values fall back to 'both'.
+//
+// This is read both at render time (app.forum exists) and inside the app
+// initializer — and in Flarum 2.0 app.forum is NOT yet built when initializers
+// run, so we fall back to the raw boot payload (app.data.resources) there.
+function displayMode(): 'both' | 'widget' | 'page' {
+    let mode: any;
+    if (app.forum) {
+        mode = app.forum.attribute('shoutboxDisplayMode');
+    } else {
+        const data = (app as any).data;
+        const forum = data && data.resources && data.resources.find((r: any) => r.type === 'forums');
+        mode = forum && forum.attributes ? forum.attributes.shoutboxDisplayMode : undefined;
+    }
+    return mode === 'widget' || mode === 'page' ? mode : 'both';
 }
 
 // Shared chat: data loading + 15s polling + optimistic send/delete, plus the
@@ -190,7 +211,7 @@ class ShoutboxChat extends Component {
                             ? shout.relationships.user.data.id
                             : null;
                     const user = userId ? this.userMap[userId] || {} : {};
-                    const name = user.displayName || 'User';
+                    const name = user.displayName || (app.translator.trans('linkrobins-shoutbox.forum.widget.unknown_user') as string);
                     const avatar = user.avatarUrl;
                     const href = userId && user.slug ? userRoute(user) : null;
 
@@ -283,6 +304,20 @@ class ShoutboxChat extends Component {
 class ShoutboxWidget extends Component {
     view() {
         const title = app.translator.trans('linkrobins-shoutbox.forum.widget.title');
+        // Only link the title through to the page when the page is enabled;
+        // otherwise the route isn't registered and app.route() would throw.
+        const pageEnabled = displayMode() !== 'widget';
+        const titleLabel = pageEnabled
+            ? m(
+                  Link,
+                  {
+                      href: app.route('linkrobins-shoutbox'),
+                      className: 'ShoutboxWidget-titleLink',
+                      title: app.translator.trans('linkrobins-shoutbox.forum.page_title'),
+                  },
+                  title
+              )
+            : title;
         return m(
             'div',
             { className: 'FofWidgets-Widget ShoutboxWidget' },
@@ -290,19 +325,7 @@ class ShoutboxWidget extends Component {
                 'div',
                 { className: 'FofWidgets-Widget-title' },
                 m('span', { className: 'FofWidgets-Widget-title-icon' }, m('i', { className: 'fas fa-bullhorn' })),
-                m(
-                    'span',
-                    { className: 'FofWidgets-Widget-title-label' },
-                    m(
-                        Link,
-                        {
-                            href: app.route('linkrobins-shoutbox'),
-                            className: 'ShoutboxWidget-titleLink',
-                            title: app.translator.trans('linkrobins-shoutbox.forum.page_title'),
-                        },
-                        title
-                    )
-                )
+                m('span', { className: 'FofWidgets-Widget-title-label' }, titleLabel)
             ),
             m('div', { className: 'FofWidgets-Widget-content' }, m(ShoutboxChat, { height: getHeight() }))
         );
@@ -340,11 +363,28 @@ class ShoutboxPage extends Page {
 }
 
 app.initializers.add('linkrobins/shoutbox', () => {
-    app.routes['linkrobins-shoutbox'] = { path: '/shoutbox', component: ShoutboxPage };
+    const mode = displayMode();
+    const showPage = mode === 'both' || mode === 'page';
+    const showWidget = mode === 'both' || mode === 'widget';
 
-    // Sidebar widget — only when fof/forum-widgets-core is installed.
+    // Page route + sidebar nav link — only when the page is enabled. When it's
+    // off, /shoutbox has no client route and mithril falls back to home.
+    if (showPage) {
+        app.routes['linkrobins-shoutbox'] = { path: '/shoutbox', component: ShoutboxPage };
+
+        // Index sidebar nav link (visible to everyone).
+        extend(IndexSidebar.prototype, 'navItems', function (this: any, items: any) {
+            items.add(
+                'linkrobins-shoutbox',
+                m(LinkButton, { href: app.route('linkrobins-shoutbox'), icon: 'fas fa-bullhorn' }, app.translator.trans('linkrobins-shoutbox.forum.nav')),
+                20
+            );
+        });
+    }
+
+    // Sidebar widget — only when enabled and fof/forum-widgets-core is installed.
     const widgets = (app as any).widgets;
-    if (widgets) {
+    if (widgets && showWidget) {
         widgets.add(
             {
                 key: 'linkrobins-shoutbox',
@@ -356,13 +396,4 @@ app.initializers.add('linkrobins/shoutbox', () => {
             'linkrobins-shoutbox'
         );
     }
-
-    // Index sidebar nav link (visible to everyone).
-    extend(IndexSidebar.prototype, 'navItems', function (this: any, items: any) {
-        items.add(
-            'linkrobins-shoutbox',
-            m(LinkButton, { href: app.route('linkrobins-shoutbox'), icon: 'fas fa-bullhorn' }, app.translator.trans('linkrobins-shoutbox.forum.nav')),
-            20
-        );
-    });
 });
