@@ -43,6 +43,22 @@ app.initializers.add('linkrobins/shoutbox', () => {
             label: app.translator.trans('linkrobins-shoutbox.admin.settings.height_label'),
             help: app.translator.trans('linkrobins-shoutbox.admin.settings.height_help'),
         })
+        .registerSetting({
+            setting: 'linkrobins-shoutbox.cooldown',
+            type: 'number',
+            min: 0,
+            max: 3600,
+            label: app.translator.trans('linkrobins-shoutbox.admin.settings.cooldown_label'),
+            help: app.translator.trans('linkrobins-shoutbox.admin.settings.cooldown_help'),
+        })
+        .registerSetting({
+            setting: 'linkrobins-shoutbox.max_rows',
+            type: 'number',
+            min: 1,
+            max: 100000,
+            label: app.translator.trans('linkrobins-shoutbox.admin.settings.max_rows_label'),
+            help: app.translator.trans('linkrobins-shoutbox.admin.settings.max_rows_help'),
+        })
         .registerPermission(
             {
                 icon: 'fas fa-bullhorn',

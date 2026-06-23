@@ -8,6 +8,7 @@ use Flarum\Api\Schema;
 use Flarum\Api\Sort\SortColumn;
 use Flarum\Foundation\ValidationException;
 use Flarum\Locale\TranslatorInterface;
+use Flarum\Settings\SettingsRepositoryInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use LinkRobins\Shoutbox\Shout\Shout;
@@ -19,18 +20,33 @@ use Tobyz\JsonApiServer\Context;
 class ShoutResource extends AbstractDatabaseResource
 {
     public function __construct(
-        protected TranslatorInterface $translator
+        protected TranslatorInterface $translator,
+        protected SettingsRepositoryInterface $settings
     ) {
     }
 
-    /** Minimum seconds between shouts from the same user (flood control). */
+    /** Default minimum seconds between shouts from the same user (flood control). */
     const COOLDOWN_SECONDS = 3;
 
-    /** Hard cap on stored shouts — the shoutbox is ephemeral, older rows are pruned. */
+    /** Default hard cap on stored shouts — the shoutbox is ephemeral, older rows are pruned. */
     const MAX_ROWS = 500;
 
     /** How many shouts the list returns. */
     const LIST_LIMIT = 30;
+
+    /** Per-user cooldown in seconds, operator-tunable (defaults to COOLDOWN_SECONDS). */
+    protected function cooldownSeconds(): int
+    {
+        $v = (int) $this->settings->get('linkrobins-shoutbox.cooldown', self::COOLDOWN_SECONDS);
+        return $v >= 0 ? $v : self::COOLDOWN_SECONDS;
+    }
+
+    /** Retention cap, operator-tunable (defaults to MAX_ROWS); must stay positive. */
+    protected function maxRows(): int
+    {
+        $v = (int) $this->settings->get('linkrobins-shoutbox.max_rows', self::MAX_ROWS);
+        return $v > 0 ? $v : self::MAX_ROWS;
+    }
 
     public function type(): string
     {
@@ -76,7 +92,7 @@ class ShoutResource extends AbstractDatabaseResource
         }
 
         $tooSoon = Shout::where('user_id', $context->getActor()->id)
-            ->where('created_at', '>=', Carbon::now()->subSeconds(self::COOLDOWN_SECONDS))
+            ->where('created_at', '>=', Carbon::now()->subSeconds($this->cooldownSeconds()))
             ->exists();
 
         if ($tooSoon) {
@@ -92,7 +108,7 @@ class ShoutResource extends AbstractDatabaseResource
      */
     public function saved(object $model, Context $context): ?object
     {
-        $cutoffId = Shout::orderByDesc('id')->skip(self::MAX_ROWS)->value('id');
+        $cutoffId = Shout::orderByDesc('id')->skip($this->maxRows())->value('id');
 
         if ($cutoffId) {
             Shout::where('id', '<=', $cutoffId)->delete();

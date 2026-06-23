@@ -34,5 +34,9 @@ return [
         // only), or 'page' (page only). The forum frontend gates the route,
         // sidebar nav link and the fof widget on this value.
         ->default('linkrobins-shoutbox.display_mode', 'both')
-        ->serializeToForum('shoutboxDisplayMode', 'linkrobins-shoutbox.display_mode'),
+        ->serializeToForum('shoutboxDisplayMode', 'linkrobins-shoutbox.display_mode')
+        // Flood control and retention, operator-tunable from the admin panel.
+        // The resource falls back to its own constants if these are unset.
+        ->default('linkrobins-shoutbox.cooldown', 3)
+        ->default('linkrobins-shoutbox.max_rows', 500),
 ];

@@ -17,7 +17,7 @@ class Shout extends AbstractModel
     protected $table = 'shoutbox_shouts';
     public $timestamps = false;
 
-    protected $dates = ['created_at'];
+    protected $casts = ['created_at' => 'datetime'];
     protected $fillable = ['user_id', 'content'];
 
     public function user(): BelongsTo
