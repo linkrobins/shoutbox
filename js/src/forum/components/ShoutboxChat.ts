@@ -232,7 +232,9 @@ export default class ShoutboxChat extends Component {
             : m('span', { className: 'ShoutboxWidget-message-username' }, name),
           m('span', { className: 'ShoutboxWidget-message-time' }, formatTime(shout.createdAt()))
         ),
-        m('div', { className: 'ShoutboxWidget-message-text' }, shout.content())
+        // FontSizer-text opts this in to linkrobins/font-sizer's reading-size
+        // control (a no-op when that extension isn't installed).
+        m('div', { className: 'ShoutboxWidget-message-text FontSizer-text' }, shout.content())
       ),
       shout.canDelete && shout.canDelete()
         ? m(
