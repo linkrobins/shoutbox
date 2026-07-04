@@ -88,7 +88,7 @@ class ShoutResource extends AbstractDatabaseResource
     public function creating(object $model, Context $context): ?object
     {
         if (trim((string) $model->content) === '') {
-            throw new ValidationException(['content' => [$this->translator->trans('linkrobins-shoutbox.api.empty_content')]]);
+            throw new ValidationException(['content' => $this->translator->trans('linkrobins-shoutbox.api.empty_content')]);
         }
 
         $tooSoon = Shout::where('user_id', $context->getActor()->id)
@@ -96,7 +96,7 @@ class ShoutResource extends AbstractDatabaseResource
             ->exists();
 
         if ($tooSoon) {
-            throw new ValidationException(['content' => [$this->translator->trans('linkrobins-shoutbox.api.rate_limited')]]);
+            throw new ValidationException(['content' => $this->translator->trans('linkrobins-shoutbox.api.rate_limited')]);
         }
 
         return $model;

@@ -164,10 +164,7 @@ export default class ShoutboxChat extends Component {
 
   view() {
     const fill = !!(this.attrs as any).fill;
-    return m('div', { className: 'ShoutboxChat' + (fill ? ' ShoutboxChat--fill' : '') }, [
-      this._renderMessages(fill),
-      this._renderComposer(),
-    ]);
+    return m('div', { className: 'ShoutboxChat' + (fill ? ' ShoutboxChat--fill' : '') }, [this._renderMessages(fill), this._renderComposer()]);
   }
 
   _renderMessages(fill: boolean) {
@@ -200,8 +197,7 @@ export default class ShoutboxChat extends Component {
   _renderMessage(shout: any) {
     const user = shout.user && shout.user();
     const name =
-      (user && user.displayName && user.displayName()) ||
-      (app.translator.trans('linkrobins-shoutbox.forum.widget.unknown_user') as string);
+      (user && user.displayName && user.displayName()) || (app.translator.trans('linkrobins-shoutbox.forum.widget.unknown_user') as string);
     const avatar = user && user.avatarUrl ? user.avatarUrl() : null;
     const href = user ? userRoute(user) : null;
 
@@ -253,11 +249,7 @@ export default class ShoutboxChat extends Component {
   _renderComposer() {
     const loggedIn = app.session && app.session.user;
     if (!loggedIn) {
-      return m(
-        'div',
-        { className: 'ShoutboxWidget-login-hint' },
-        app.translator.trans('linkrobins-shoutbox.forum.widget.login_to_shout')
-      );
+      return m('div', { className: 'ShoutboxWidget-login-hint' }, app.translator.trans('linkrobins-shoutbox.forum.widget.login_to_shout'));
     }
     return m(
       'div',
@@ -285,11 +277,7 @@ export default class ShoutboxChat extends Component {
           ? m('i', { className: 'fas fa-spinner fa-spin' })
           : [
               m('i', { className: 'fas fa-paper-plane' }),
-              m(
-                'span',
-                { className: 'ShoutboxWidget-send-label' },
-                ' ' + app.translator.trans('linkrobins-shoutbox.forum.widget.send')
-              ),
+              m('span', { className: 'ShoutboxWidget-send-label' }, ' ' + app.translator.trans('linkrobins-shoutbox.forum.widget.send')),
             ]
       )
     );

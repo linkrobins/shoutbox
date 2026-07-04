@@ -26,11 +26,7 @@ app.initializers.add('linkrobins/shoutbox', () => {
     extend(IndexSidebar.prototype, 'navItems', function (this: any, items: any) {
       items.add(
         'linkrobins-shoutbox',
-        m(
-          LinkButton,
-          { href: app.route('linkrobins-shoutbox'), icon: 'fas fa-bullhorn' },
-          app.translator.trans('linkrobins-shoutbox.forum.nav')
-        ),
+        m(LinkButton, { href: app.route('linkrobins-shoutbox'), icon: 'fas fa-bullhorn' }, app.translator.trans('linkrobins-shoutbox.forum.nav')),
         20
       );
     });
