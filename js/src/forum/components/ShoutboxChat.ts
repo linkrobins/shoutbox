@@ -3,7 +3,7 @@ import m from 'mithril';
 import type Mithril from 'mithril';
 import Component, { type ComponentAttrs } from 'flarum/common/Component';
 import type Shout from '../models/Shout';
-import { formatTime, avatarColor, userRoute, getHeight, messageOrder, pollInterval } from '../utils/format';
+import { formatTime, avatarColor, userRoute, getHeight, messageOrder, composerPosition, pollInterval } from '../utils/format';
 
 // Failure back-off is capped at four times the configured refresh interval.
 const POLL_BACKOFF_FACTOR = 4;
@@ -201,13 +201,21 @@ export default class ShoutboxChat extends Component<ShoutboxChatAttrs> {
   view() {
     const fill = !!this.attrs.fill;
     const newestFirst = this._newestFirst();
-    // With newest-first the input sits above the list, so a new shout appears
-    // right under the box you typed it in instead of off at the far end.
+    // By default the input sits next to the newest message (top when
+    // newest-first is on), so a new shout appears right under the box it was
+    // typed in. Admins can pin it to either side instead.
+    const composerTop = composerPosition() === 'top';
     const parts = [this._renderMessages(fill), this._renderComposer()];
     return m(
       'div',
-      { className: 'ShoutboxChat' + (fill ? ' ShoutboxChat--fill' : '') + (newestFirst ? ' ShoutboxChat--newestFirst' : '') },
-      newestFirst ? parts.reverse() : parts
+      {
+        className:
+          'ShoutboxChat' +
+          (fill ? ' ShoutboxChat--fill' : '') +
+          (newestFirst ? ' ShoutboxChat--newestFirst' : '') +
+          (composerTop ? ' ShoutboxChat--composerTop' : ''),
+      },
+      composerTop ? parts.reverse() : parts
     );
   }
 

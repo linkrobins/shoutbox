@@ -62,6 +62,17 @@ export function messageOrder(): 'oldest_first' | 'newest_first' {
   return order === 'newest_first' ? 'newest_first' : 'oldest_first';
 }
 
+// Where the composer sits, resolved to a side. The stored setting may also be
+// 'auto', which means "follow the message order": the box sits next to the
+// newest message, so it's at the bottom in the default order and at the top
+// when newest-first is on. That's the behaviour the order setting shipped
+// with, so 'auto' is the default and existing forums are unaffected.
+export function composerPosition(): 'top' | 'bottom' {
+  const position = app.forum ? app.forum.attribute('shoutboxComposerPosition') : undefined;
+  if (position === 'top' || position === 'bottom') return position;
+  return messageOrder() === 'newest_first' ? 'top' : 'bottom';
+}
+
 // How often an open shoutbox refreshes, in milliseconds. Admin-controlled and
 // clamped to 10-300s: every open tab polls, so a busy forum can trade
 // freshness for load here.

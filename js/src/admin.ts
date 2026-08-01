@@ -55,6 +55,18 @@ app.initializers.add('linkrobins/shoutbox', () => {
       help: app.translator.trans('linkrobins-shoutbox.admin.settings.height_help'),
     })
     .registerSetting({
+      setting: 'linkrobins-shoutbox.composer_position',
+      type: 'select',
+      options: {
+        auto: app.translator.trans('linkrobins-shoutbox.admin.settings.composer_position_auto'),
+        bottom: app.translator.trans('linkrobins-shoutbox.admin.settings.composer_position_bottom'),
+        top: app.translator.trans('linkrobins-shoutbox.admin.settings.composer_position_top'),
+      },
+      default: 'auto',
+      label: app.translator.trans('linkrobins-shoutbox.admin.settings.composer_position_label'),
+      help: app.translator.trans('linkrobins-shoutbox.admin.settings.composer_position_help'),
+    })
+    .registerSetting({
       setting: 'linkrobins-shoutbox.poll_interval',
       type: 'number',
       min: 10,

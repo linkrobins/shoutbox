@@ -29,9 +29,14 @@ linkrobins-shoutbox:
       display_mode_widget: Widget only
       display_mode_page: Page only
       order_label: Message order
-      order_help: "Where new messages appear. With newest first, the input box moves to the top of the shoutbox, just above the latest message."
+      order_help: "Where new messages appear. By default the typing box follows the order and sits next to the newest message, which you can change below."
       order_oldest_first: "Oldest first (newest at the bottom)"
       order_newest_first: "Newest first (newest at the top)"
+      composer_position_label: Typing box position
+      composer_position_help: "Where the box people type in sits. By default it follows the message order, so it is always next to the newest message."
+      composer_position_auto: "Next to the newest message (default)"
+      composer_position_bottom: "Always at the bottom"
+      composer_position_top: "Always at the top"
       height_label: Messages height (px)
       height_help: Height of the messages area in pixels. Default is 320.
       poll_interval_label: Refresh interval (seconds)

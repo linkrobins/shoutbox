@@ -39,6 +39,10 @@ return [
         // 'newest_first' (newest at the top, with the input box above the list).
         ->default('linkrobins-shoutbox.order', 'oldest_first')
         ->serializeToForum('shoutboxOrder', 'linkrobins-shoutbox.order')
+        // Where the typing box sits: 'auto' follows the message order (bottom
+        // for oldest-first, top for newest-first), or pin it to 'top'/'bottom'.
+        ->default('linkrobins-shoutbox.composer_position', 'auto')
+        ->serializeToForum('shoutboxComposerPosition', 'linkrobins-shoutbox.composer_position')
         // How often an open shoutbox asks the server for new messages. Higher
         // values mean less load on busy forums; the frontend clamps the range.
         ->default('linkrobins-shoutbox.poll_interval', 30)
