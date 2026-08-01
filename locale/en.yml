@@ -28,8 +28,14 @@ linkrobins-shoutbox:
       display_mode_both: Page and widget
       display_mode_widget: Widget only
       display_mode_page: Page only
+      order_label: Message order
+      order_help: "Where new messages appear. With newest first, the input box moves to the top of the shoutbox, just above the latest message."
+      order_oldest_first: "Oldest first (newest at the bottom)"
+      order_newest_first: "Newest first (newest at the top)"
       height_label: Messages height (px)
       height_help: Height of the messages area in pixels. Default is 320.
+      poll_interval_label: Refresh interval (seconds)
+      poll_interval_help: How often an open shoutbox checks for new messages. Higher values reduce load on a busy forum. Between 10 and 300, default is 30.
       cooldown_label: Cooldown (seconds)
       cooldown_help: Minimum seconds a user must wait between shouts. Default is 3.
       max_rows_label: Maximum stored shouts

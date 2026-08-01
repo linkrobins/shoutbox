@@ -35,6 +35,14 @@ return [
         // sidebar nav link and the fof widget on this value.
         ->default('linkrobins-shoutbox.display_mode', 'both')
         ->serializeToForum('shoutboxDisplayMode', 'linkrobins-shoutbox.display_mode')
+        // Message order: 'oldest_first' (newest at the bottom, chat style) or
+        // 'newest_first' (newest at the top, with the input box above the list).
+        ->default('linkrobins-shoutbox.order', 'oldest_first')
+        ->serializeToForum('shoutboxOrder', 'linkrobins-shoutbox.order')
+        // How often an open shoutbox asks the server for new messages. Higher
+        // values mean less load on busy forums; the frontend clamps the range.
+        ->default('linkrobins-shoutbox.poll_interval', 30)
+        ->serializeToForum('shoutboxPollInterval', 'linkrobins-shoutbox.poll_interval')
         // Flood control and retention, operator-tunable from the admin panel.
         // The resource falls back to its own constants if these are unset.
         ->default('linkrobins-shoutbox.cooldown', 3)

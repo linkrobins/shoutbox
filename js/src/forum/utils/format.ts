@@ -53,3 +53,20 @@ export function displayMode(): 'both' | 'widget' | 'page' {
   }
   return mode === 'widget' || mode === 'page' ? mode : 'both';
 }
+
+// Admin-controlled message order: 'oldest_first' (chat style, newest at the
+// bottom) or 'newest_first' (newest at the top). Unknown/missing values fall
+// back to 'oldest_first', which is how the shoutbox has always behaved.
+export function messageOrder(): 'oldest_first' | 'newest_first' {
+  const order = app.forum ? app.forum.attribute('shoutboxOrder') : undefined;
+  return order === 'newest_first' ? 'newest_first' : 'oldest_first';
+}
+
+// How often an open shoutbox refreshes, in milliseconds. Admin-controlled and
+// clamped to 10-300s: every open tab polls, so a busy forum can trade
+// freshness for load here.
+export function pollInterval(): number {
+  const seconds = parseInt(String(app.forum ? app.forum.attribute('shoutboxPollInterval') : '') || '30', 10);
+  if (isNaN(seconds)) return 30000;
+  return Math.min(Math.max(seconds, 10), 300) * 1000;
+}

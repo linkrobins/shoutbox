@@ -1,28 +1,36 @@
 import app from 'flarum/forum/app';
 import m from 'mithril';
-import Component from 'flarum/common/Component';
-import { formatTime, avatarColor, userRoute, getHeight } from '../utils/format';
+import type Mithril from 'mithril';
+import Component, { type ComponentAttrs } from 'flarum/common/Component';
+import type Shout from '../models/Shout';
+import { formatTime, avatarColor, userRoute, getHeight, messageOrder, pollInterval } from '../utils/format';
 
-// Default refresh interval, and the cap for failure back-off.
-const POLL_BASE = 30000; // 30s
-const POLL_MAX = 120000; // 2 min
+// Failure back-off is capped at four times the configured refresh interval.
+const POLL_BACKOFF_FACTOR = 4;
+
+export interface ShoutboxChatAttrs extends ComponentAttrs {
+  /** Fixed height for the message list, in pixels (the widget passes this). */
+  height?: number;
+  /** Let the message list grow to fill its container instead (the page). */
+  fill?: boolean;
+}
 
 // Shared chat: data loading + polling + optimistic send/delete, plus the
 // message list and composer. Used by both the sidebar widget and the page.
-// Attrs: { height?: number; fill?: boolean }.
 //
 // Reads/writes go through app.store ('shouts' model), so users are sideloaded
 // and the store stays consistent. The poll is a self-scheduling timeout that
 // pauses while the tab is hidden and backs off on consecutive failures.
-export default class ShoutboxChat extends Component {
-  shouts!: any[];
+export default class ShoutboxChat extends Component<ShoutboxChatAttrs> {
+  shouts!: Shout[];
   loading!: boolean;
   sending!: boolean;
   loadError!: boolean;
   input!: string;
-  private _poll: any = null;
-  private _delay = POLL_BASE;
+  private _poll: ReturnType<typeof setTimeout> | null = null;
+  private _delay = pollInterval();
   private _failures = 0;
+  private _inputEl: HTMLInputElement | null = null;
 
   // Resume immediately (at the base interval) when the tab becomes visible
   // again, so a backgrounded shoutbox refreshes the moment it's focused.
@@ -30,13 +38,13 @@ export default class ShoutboxChat extends Component {
     if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
       if (this._poll) clearTimeout(this._poll);
       this._poll = null;
-      this._delay = POLL_BASE;
+      this._delay = pollInterval();
       this._failures = 0;
       this._pollTick();
     }
   };
 
-  oninit(vnode: any) {
+  oninit(vnode: Mithril.Vnode<ShoutboxChatAttrs, this>) {
     super.oninit(vnode);
     this.shouts = [];
     this.loading = true;
@@ -44,13 +52,13 @@ export default class ShoutboxChat extends Component {
     this.loadError = false;
     this.input = '';
     this._poll = null;
-    this._delay = POLL_BASE;
+    this._delay = pollInterval();
     this._failures = 0;
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this._onVisible);
     this._load();
   }
 
-  onremove(vnode: any) {
+  onremove(vnode: Mithril.Vnode<ShoutboxChatAttrs, this>) {
     super.onremove(vnode);
     if (this._poll) clearTimeout(this._poll);
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this._onVisible);
@@ -60,26 +68,32 @@ export default class ShoutboxChat extends Component {
     return app.store.find('shouts', { sort: '-createdAt', include: 'user' });
   }
 
-  // The API returns shouts newest-first; the list renders oldest-first and
-  // scrolls to the newest at the bottom.
-  private _apply(shouts: any[]) {
-    this.shouts = (shouts || []).slice().reverse();
+  private _newestFirst() {
+    return messageOrder() === 'newest_first';
+  }
+
+  // The API always returns shouts newest-first. In the default order the list
+  // renders oldest-first and scrolls to the newest at the bottom; in
+  // newest-first order the API order is kept and the newest sits at the top.
+  private _apply(shouts: Shout[]) {
+    const list = (shouts || []).slice();
+    this.shouts = this._newestFirst() ? list : list.reverse();
   }
 
   _load() {
     this.loading = true;
     this._query()
-      .then((shouts: any[]) => {
+      .then((shouts: Shout[]) => {
         this._apply(shouts);
         this.loading = false;
         this.loadError = false;
         this._failures = 0;
-        this._delay = POLL_BASE;
+        this._delay = pollInterval();
         m.redraw();
-        setTimeout(() => this._scrollBottom(), 50);
+        setTimeout(() => this._scrollToNewest(), 50);
         this._schedulePoll();
       })
-      .catch((e: any) => {
+      .catch((e: unknown) => {
         console.error('[linkrobins/shoutbox] initial load failed', e);
         this.loading = false;
         this.loadError = true;
@@ -93,30 +107,45 @@ export default class ShoutboxChat extends Component {
   }
 
   // One poll cycle: skip (but reschedule) while hidden; on success reset the
-  // interval, on failure back off exponentially up to POLL_MAX.
+  // interval, on failure back off exponentially up to the back-off cap.
   private _pollTick() {
     if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
       this._schedulePoll();
       return;
     }
+    const base = pollInterval();
     this._query()
-      .then((shouts: any[]) => {
+      .then((shouts: Shout[]) => {
         this._failures = 0;
-        this._delay = POLL_BASE;
+        this._delay = base;
         this._apply(shouts);
         m.redraw();
       })
-      .catch((e: any) => {
+      .catch((e: unknown) => {
         this._failures++;
-        this._delay = Math.min(POLL_BASE * Math.pow(2, this._failures), POLL_MAX);
+        this._delay = Math.min(base * Math.pow(2, this._failures), base * POLL_BACKOFF_FACTOR);
         console.error('[linkrobins/shoutbox] poll refresh failed', e);
       })
       .then(() => this._schedulePoll());
   }
 
-  _scrollBottom() {
+  // Scroll the message list to wherever the newest shout lives: the bottom in
+  // the default order, the top when newest-first is enabled.
+  _scrollToNewest() {
     const el = this.element && this.element.querySelector('.ShoutboxWidget-messages');
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el) el.scrollTop = this._newestFirst() ? 0 : el.scrollHeight;
+  }
+
+  // Put the cursor back in the input after a send so you can keep typing
+  // without clicking. The input is disabled while sending, which drops focus,
+  // so this runs once the redraw has re-enabled it. Skipped if the user has
+  // meanwhile focused something outside the shoutbox.
+  _focusInput() {
+    const el = this._inputEl;
+    if (!el || !document.contains(el) || el.disabled) return;
+    const active = document.activeElement;
+    if (active && active !== document.body && this.element && !this.element.contains(active)) return;
+    el.focus();
   }
 
   _send() {
@@ -126,18 +155,25 @@ export default class ShoutboxChat extends Component {
     app.store
       .createRecord('shouts')
       .save({ content })
-      .then((shout: any) => {
-        this.shouts.push(shout);
+      .then((shout: Shout) => {
+        if (this._newestFirst()) this.shouts.unshift(shout);
+        else this.shouts.push(shout);
         this.input = '';
         this.sending = false;
         m.redraw();
-        setTimeout(() => this._scrollBottom(), 30);
+        setTimeout(() => {
+          this._scrollToNewest();
+          this._focusInput();
+        }, 30);
       })
       .catch((e: any) => {
         this.sending = false;
         m.redraw();
-        // Surface flood-control / validation rejection (cooldown returns 422
-        // from the resource) so the failure isn't silent.
+        // Keep the (unsent) text and the cursor where they were so the shout
+        // can be retried without retyping it.
+        setTimeout(() => this._focusInput(), 30);
+        // Surface flood-control / validation rejection (the cooldown returns
+        // 422 from the resource) so the failure isn't silent.
         const status = e && (e.status || (e.response && e.response.status));
         if ((status === 422 || status === 429 || status === '422' || status === '429') && app.alerts) {
           app.alerts.show({ type: 'error' }, app.translator.trans('linkrobins-shoutbox.forum.widget.rate_limited'));
@@ -145,13 +181,13 @@ export default class ShoutboxChat extends Component {
       });
   }
 
-  _delete(shout: any) {
+  _delete(shout: Shout) {
     if (!confirm(app.translator.trans('linkrobins-shoutbox.forum.widget.delete_confirm') as string)) return;
     const index = this.shouts.indexOf(shout);
     if (index === -1) return;
     this.shouts = this.shouts.filter((s) => s !== shout);
     m.redraw();
-    shout.delete().catch((e: any) => {
+    shout.delete().catch((e: unknown) => {
       console.error('[linkrobins/shoutbox] delete failed', e);
       // Roll the optimistic removal back if the request failed.
       if (this.shouts.indexOf(shout) === -1) this.shouts.splice(index, 0, shout);
@@ -163,13 +199,21 @@ export default class ShoutboxChat extends Component {
   }
 
   view() {
-    const fill = !!(this.attrs as any).fill;
-    return m('div', { className: 'ShoutboxChat' + (fill ? ' ShoutboxChat--fill' : '') }, [this._renderMessages(fill), this._renderComposer()]);
+    const fill = !!this.attrs.fill;
+    const newestFirst = this._newestFirst();
+    // With newest-first the input sits above the list, so a new shout appears
+    // right under the box you typed it in instead of off at the far end.
+    const parts = [this._renderMessages(fill), this._renderComposer()];
+    return m(
+      'div',
+      { className: 'ShoutboxChat' + (fill ? ' ShoutboxChat--fill' : '') + (newestFirst ? ' ShoutboxChat--newestFirst' : '') },
+      newestFirst ? parts.reverse() : parts
+    );
   }
 
   _renderMessages(fill: boolean) {
     const loggedIn = app.session && app.session.user;
-    const height = (this.attrs as any).height || getHeight();
+    const height = this.attrs.height || getHeight();
 
     if (this.loading) {
       return m('div', { className: 'ShoutboxWidget-empty' }, m('i', { className: 'fas fa-spinner fa-spin' }));
@@ -194,7 +238,7 @@ export default class ShoutboxChat extends Component {
     );
   }
 
-  _renderMessage(shout: any) {
+  _renderMessage(shout: Shout) {
     const user = shout.user && shout.user();
     const name =
       (user && user.displayName && user.displayName()) || (app.translator.trans('linkrobins-shoutbox.forum.widget.unknown_user') as string);
@@ -206,14 +250,13 @@ export default class ShoutboxChat extends Component {
       { className: 'ShoutboxWidget-message', key: shout.id() },
       avatar
         ? m('img', { className: 'ShoutboxWidget-message-avatar', src: avatar, alt: '' })
-        : m(
+        : // Only the generated colour is inline; the rest of the initials
+          // avatar is styled in forum.less so themes can override it.
+          m(
             'div',
             {
-              className: 'ShoutboxWidget-message-avatar',
-              style:
-                'background:' +
-                avatarColor(name) +
-                ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.75rem;border-radius:50%;width:26px;height:26px;flex-shrink:0;',
+              className: 'ShoutboxWidget-message-avatar ShoutboxWidget-message-avatar--initials',
+              style: 'background:' + avatarColor(name),
             },
             name.charAt(0).toUpperCase()
           ),
@@ -259,10 +302,16 @@ export default class ShoutboxChat extends Component {
         maxlength: 280,
         placeholder: app.translator.trans('linkrobins-shoutbox.forum.widget.placeholder'),
         value: this.input,
-        oninput: (e: any) => {
-          this.input = e.target.value;
+        oncreate: (vnode: Mithril.VnodeDOM) => {
+          this._inputEl = vnode.dom as HTMLInputElement;
         },
-        onkeydown: (e: any) => {
+        onremove: () => {
+          this._inputEl = null;
+        },
+        oninput: (e: InputEvent) => {
+          this.input = (e.target as HTMLInputElement).value;
+        },
+        onkeydown: (e: KeyboardEvent) => {
           if (e.key === 'Enter') this._send();
         },
         disabled: this.sending,

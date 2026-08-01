@@ -36,12 +36,31 @@ app.initializers.add('linkrobins/shoutbox', () => {
       help: app.translator.trans('linkrobins-shoutbox.admin.settings.display_mode_help'),
     })
     .registerSetting({
+      setting: 'linkrobins-shoutbox.order',
+      type: 'select',
+      options: {
+        oldest_first: app.translator.trans('linkrobins-shoutbox.admin.settings.order_oldest_first'),
+        newest_first: app.translator.trans('linkrobins-shoutbox.admin.settings.order_newest_first'),
+      },
+      default: 'oldest_first',
+      label: app.translator.trans('linkrobins-shoutbox.admin.settings.order_label'),
+      help: app.translator.trans('linkrobins-shoutbox.admin.settings.order_help'),
+    })
+    .registerSetting({
       setting: 'linkrobins-shoutbox.height',
       type: 'number',
       min: 100,
       max: 1000,
       label: app.translator.trans('linkrobins-shoutbox.admin.settings.height_label'),
       help: app.translator.trans('linkrobins-shoutbox.admin.settings.height_help'),
+    })
+    .registerSetting({
+      setting: 'linkrobins-shoutbox.poll_interval',
+      type: 'number',
+      min: 10,
+      max: 300,
+      label: app.translator.trans('linkrobins-shoutbox.admin.settings.poll_interval_label'),
+      help: app.translator.trans('linkrobins-shoutbox.admin.settings.poll_interval_help'),
     })
     .registerSetting({
       setting: 'linkrobins-shoutbox.cooldown',

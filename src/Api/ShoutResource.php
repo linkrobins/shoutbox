@@ -103,11 +103,14 @@ class ShoutResource extends AbstractDatabaseResource
     }
 
     /**
-     * Post-save: keep the table bounded by pruning all but the newest MAX_ROWS.
-     * Two cheap indexed queries, off the display path.
+     * Post-save: settle any cooldown race, then keep the table bounded by
+     * pruning all but the newest MAX_ROWS. Cheap indexed queries, off the
+     * display path.
      */
     public function saved(object $model, Context $context): ?object
     {
+        $this->settleCooldownRace($model);
+
         $cutoffId = Shout::orderByDesc('id')->skip($this->maxRows())->value('id');
 
         if ($cutoffId) {
@@ -115,6 +118,36 @@ class ShoutResource extends AbstractDatabaseResource
         }
 
         return $model;
+    }
+
+    /**
+     * The pre-save cooldown check reads the table before this row exists, so
+     * two requests that arrive in the same instant can both pass it. Re-check
+     * now that the row is committed and both racers can see each other: the
+     * lower id wins, the loser removes itself and reports the cooldown. This
+     * is set-based and lock-free, so it behaves the same on every database
+     * Flarum supports.
+     *
+     * @param Shout $model
+     */
+    protected function settleCooldownRace(Shout $model): void
+    {
+        $cooldown = $this->cooldownSeconds();
+
+        if ($cooldown <= 0) {
+            return;
+        }
+
+        $raced = Shout::where('user_id', $model->user_id)
+            ->where('id', '<', $model->id)
+            ->where('created_at', '>=', $model->created_at->copy()->subSeconds($cooldown))
+            ->exists();
+
+        if ($raced) {
+            $model->delete();
+
+            throw new ValidationException(['content' => $this->translator->trans('linkrobins-shoutbox.api.rate_limited')]);
+        }
     }
 
     public function sorts(): array

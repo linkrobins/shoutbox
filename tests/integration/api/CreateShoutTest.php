@@ -112,6 +112,29 @@ class CreateShoutTest extends TestCase
     }
 
     #[Test]
+    public function a_shout_after_the_cooldown_has_passed_is_kept(): void
+    {
+        // Guards the post-save race check: it must only remove a shout that
+        // really did race another one, never a legitimate follow-up posted
+        // once the cooldown has elapsed.
+        $this->database()->table('shoutbox_shouts')->insert([
+            'user_id' => 2, 'content' => 'first', 'created_at' => Carbon::now()->subMinutes(5),
+        ]);
+
+        $response = $this->send(
+            $this->request('POST', '/api/shouts', [
+                'authenticatedAs' => 2,
+                'json' => $this->shoutBody('second, much later'),
+            ])
+        );
+
+        $this->assertEquals(201, $response->getStatusCode());
+
+        $contents = $this->database()->table('shoutbox_shouts')->orderBy('id')->pluck('content')->all();
+        $this->assertEquals(['first', 'second, much later'], $contents);
+    }
+
+    #[Test]
     public function old_shouts_are_pruned_past_the_row_cap(): void
     {
         // setting() registers the value before the app boots; writing the

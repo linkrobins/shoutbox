@@ -25,6 +25,17 @@
             height: 26px;
             border-radius: 50%;
             object-fit: cover;
+
+            // Fallback for users with no avatar: the initial on a generated
+            // colour. Only the colour is set inline, in the view.
+            &--initials {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                font-weight: 700;
+                font-size: .75rem;
+            }
         }
 
         &-body {
@@ -193,4 +204,11 @@
     flex: 1 1 auto;
     min-height: 0;
     height: auto;
+}
+
+// Newest-first order: the composer is rendered above the list, so the gap
+// between the two moves from below the messages to above them.
+.ShoutboxChat--newestFirst > .ShoutboxWidget-messages {
+    margin-bottom: 0;
+    margin-top: 10px;
 }
