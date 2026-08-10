@@ -2,6 +2,8 @@
     "name": "linkrobins/shoutbox",
     "description": "Shoutbox widget for fof/forum-widgets-core",
     "type": "flarum-extension",
+    "keywords": ["flarum", "widget", "shoutbox", "chat", "forum-widgets"],
+    "homepage": "https://linkrobins.com/extensions/shoutbox",
     "license": "MIT",
     "authors": [
         {
