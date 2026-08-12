@@ -2,12 +2,22 @@
     "name": "linkrobins/shoutbox",
     "description": "Shoutbox widget for fof/forum-widgets-core",
     "type": "flarum-extension",
-    "keywords": ["flarum", "widget", "shoutbox", "chat", "forum-widgets"],
+    "keywords": [
+        "flarum",
+        "widget",
+        "shoutbox",
+        "chat",
+        "forum-widgets"
+    ],
+    "support": {
+        "issues": "https://github.com/linkrobins/shoutbox/issues",
+        "source": "https://github.com/linkrobins/shoutbox"
+    },
     "homepage": "https://linkrobins.com/extensions/shoutbox",
     "license": "MIT",
     "authors": [
         {
-            "name": "Karl Bullock",
+            "name": "Link Robins",
             "email": "karl@linkrobins.com"
         }
     ],
