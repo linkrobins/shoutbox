@@ -3,11 +3,14 @@ import m from 'mithril';
 import Component from 'flarum/common/Component';
 import Link from 'flarum/common/components/Link';
 import ShoutboxChat from './ShoutboxChat';
-import { getHeight, displayMode } from '../utils/format';
+import { canView, getHeight, displayMode } from '../utils/format';
 
 // Sidebar widget (fof/forum-widgets-core); its title links through to the page.
 export default class ShoutboxWidget extends Component {
   view() {
+    // No permission, no widget — not even the empty card frame.
+    if (!canView()) return null;
+
     const title = app.translator.trans('linkrobins-shoutbox.forum.widget.title');
     // Only link the title through to the page when the page is enabled;
     // otherwise the route isn't registered and app.route() would throw.

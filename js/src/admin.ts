@@ -92,6 +92,16 @@ app.initializers.add('linkrobins/shoutbox', () => {
     })
     .registerPermission(
       {
+        icon: 'fas fa-eye',
+        label: app.translator.trans('linkrobins-shoutbox.admin.permissions.view'),
+        permission: 'linkrobins-shoutbox.view',
+        allowGuest: true,
+      },
+      'view',
+      95
+    )
+    .registerPermission(
+      {
         icon: 'fas fa-bullhorn',
         label: app.translator.trans('linkrobins-shoutbox.admin.permissions.shout'),
         permission: 'linkrobins-shoutbox.shout',

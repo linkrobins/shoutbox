@@ -27,6 +27,14 @@ return [
     (new Extend\Policy())
         ->modelPolicy(Shout::class, ShoutPolicy::class),
 
+    // Whether this viewer may see the shoutbox at all; the frontend gates the
+    // widget, nav link and page on it. The API scope enforces it regardless.
+    (new Extend\ApiResource(Flarum\Api\Resource\ForumResource::class))
+        ->fields(fn () => [
+            Flarum\Api\Schema\Boolean::make('canViewShoutbox')
+                ->get(fn ($forum, $context) => $context->getActor()->hasPermission('linkrobins-shoutbox.view')),
+        ]),
+
     (new Extend\Settings())
         ->default('linkrobins-shoutbox.height', '320')
         ->serializeToForum('shoutboxHeight', 'linkrobins-shoutbox.height')

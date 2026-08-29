@@ -42,6 +42,22 @@ export function getHeight(): number {
 // This is read both at render time (app.forum exists) and inside the app
 // initializer -- and in Flarum 2.0 app.forum is NOT yet built when initializers
 // run, so we fall back to the raw boot payload (app.data.resources) there.
+/**
+ * Whether this viewer may see the shoutbox at all, with the same early-boot
+ * fallback displayMode() uses: initializers can run before `app.forum` is
+ * built, so the raw payload is the second source of truth.
+ */
+export function canView(): boolean {
+  if (app.forum) {
+    return !!app.forum.attribute('canViewShoutbox');
+  }
+
+  const data = (app as any).data;
+  const forum = data && data.resources && data.resources.find((r: any) => r.type === 'forums');
+
+  return !!(forum && forum.attributes && forum.attributes.canViewShoutbox);
+}
+
 export function displayMode(): 'both' | 'widget' | 'page' {
   let mode: any;
   if (app.forum) {

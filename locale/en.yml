@@ -46,5 +46,6 @@ linkrobins-shoutbox:
       max_rows_label: Maximum stored shouts
       max_rows_help: Older shouts beyond this count are pruned. Default is 500.
     permissions:
+      view: View the shoutbox
       shout: Post shouts
       moderate: Delete others' shouts

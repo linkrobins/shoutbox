@@ -4,6 +4,7 @@ import Page from 'flarum/common/components/Page';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import IndexSidebar from 'flarum/forum/components/IndexSidebar';
 import ShoutboxChat from './ShoutboxChat';
+import { canView } from '../utils/format';
 
 // Standalone page at /shoutbox.
 export default class ShoutboxPage extends Page {
@@ -19,6 +20,9 @@ export default class ShoutboxPage extends Page {
   }
 
   view() {
+    // Server-side, /shoutbox 404s without the permission; this covers SPA
+    // navigation with a stale payload.
+    if (!canView()) return m('div');
     const content = m('div', { className: 'ShoutboxPage-container' }, [
       m(
         'div',
