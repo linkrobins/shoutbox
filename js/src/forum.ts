@@ -6,7 +6,7 @@ import { extend } from 'flarum/common/extend';
 import Shout from './forum/models/Shout';
 import ShoutboxPage from './forum/components/ShoutboxPage';
 import ShoutboxWidget from './forum/components/ShoutboxWidget';
-import { displayMode } from './forum/utils/format';
+import { canView, displayMode } from './forum/utils/format';
 
 app.initializers.add('linkrobins/shoutbox', () => {
   // Register the 'shouts' model so app.store.find()/createRecord() return typed,
@@ -24,6 +24,8 @@ app.initializers.add('linkrobins/shoutbox', () => {
 
     // Index sidebar nav link (visible to everyone).
     extend(IndexSidebar.prototype, 'navItems', function (this: any, items: any) {
+      if (!canView()) return;
+
       items.add(
         'linkrobins-shoutbox',
         m(LinkButton, { href: app.route('linkrobins-shoutbox'), icon: 'fas fa-bullhorn' }, app.translator.trans('linkrobins-shoutbox.forum.nav')),

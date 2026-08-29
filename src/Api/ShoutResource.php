@@ -60,11 +60,15 @@ class ShoutResource extends AbstractDatabaseResource
 
     /**
      * Shouts are only visible to viewers of the forum (e.g. not guests on a
-     * private forum). There's no per-row visibility, so it's all-or-nothing.
+     * private forum) who also hold the view permission — seeded to everyone,
+     * revocable per group so a shoutbox can be members-only. There's no
+     * per-row visibility, so it's all-or-nothing.
      */
     public function scope(Builder $query, Context $context): void
     {
-        if (! $context->getActor()->hasPermission('viewForum')) {
+        $actor = $context->getActor();
+
+        if (! $actor->hasPermission('viewForum') || ! $actor->hasPermission('linkrobins-shoutbox.view')) {
             $query->whereRaw('1 = 0');
         }
     }

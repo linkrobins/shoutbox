@@ -4,6 +4,7 @@ namespace LinkRobins\Shoutbox\Content;
 
 use Flarum\Frontend\Document;
 use Flarum\Http\Exception\RouteNotFoundException;
+use Flarum\Http\RequestUtil;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -27,6 +28,13 @@ class ShoutboxPage
         $mode = $this->settings->get('linkrobins-shoutbox.display_mode', 'both');
 
         if ($mode === 'widget') {
+            throw new RouteNotFoundException();
+        }
+
+        // Same treatment for a viewer without the view permission: the page
+        // does not exist for them, rather than serving a shell that renders
+        // an empty chat.
+        if (! RequestUtil::getActor($request)->hasPermission('linkrobins-shoutbox.view')) {
             throw new RouteNotFoundException();
         }
 
