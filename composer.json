@@ -62,7 +62,7 @@
     },
     "extra": {
         "flarum-extension": {
-            "title": "Link Robins Shoutbox",
+            "title": "LR Shoutbox",
             "category": "forum-widget",
             "icon": {
                 "name": "fas fa-bullhorn",
