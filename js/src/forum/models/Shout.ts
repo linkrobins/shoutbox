@@ -7,6 +7,6 @@ import type User from 'flarum/common/models/User';
 export default class Shout extends Model {
   content = Model.attribute<string>('content');
   canDelete = Model.attribute<boolean>('canDelete');
-  createdAt = Model.attribute<Date | undefined>('createdAt', Model.transformDate);
+  createdAt = Model.attribute<Date | undefined, string>('createdAt', Model.transformDate);
   user = Model.hasOne<User>('user');
 }

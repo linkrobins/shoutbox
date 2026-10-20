@@ -1,8 +1,9 @@
 import app from 'flarum/forum/app';
 import m from 'mithril';
+import type Mithril from 'mithril';
 import Component from 'flarum/common/Component';
 import Link from 'flarum/common/components/Link';
-import ShoutboxChat from './ShoutboxChat';
+import ShoutboxChat, { type ShoutboxChatAttrs } from './ShoutboxChat';
 import { canView, getHeight, displayMode } from '../utils/format';
 
 // Sidebar widget (fof/forum-widgets-core); its title links through to the page.
@@ -35,7 +36,11 @@ export default class ShoutboxWidget extends Component {
         m('span', { className: 'FofWidgets-Widget-title-icon' }, m('i', { className: 'fas fa-bullhorn' })),
         m('span', { className: 'FofWidgets-Widget-title-label' }, titleLabel)
       ),
-      m('div', { className: 'FofWidgets-Widget-content' }, m(ShoutboxChat, { height: getHeight() }))
+      m(
+        'div',
+        { className: 'FofWidgets-Widget-content' },
+        m(ShoutboxChat as unknown as Mithril.ComponentTypes<ShoutboxChatAttrs>, { height: getHeight() })
+      )
     );
   }
 }

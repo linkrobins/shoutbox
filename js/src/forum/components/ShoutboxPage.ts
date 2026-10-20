@@ -1,9 +1,10 @@
 import app from 'flarum/forum/app';
 import m from 'mithril';
+import type Mithril from 'mithril';
 import Page from 'flarum/common/components/Page';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import IndexSidebar from 'flarum/forum/components/IndexSidebar';
-import ShoutboxChat from './ShoutboxChat';
+import ShoutboxChat, { type ShoutboxChatAttrs } from './ShoutboxChat';
 import { canView } from '../utils/format';
 
 // Standalone page at /shoutbox.
@@ -33,7 +34,7 @@ export default class ShoutboxPage extends Page {
           app.translator.trans('linkrobins-shoutbox.forum.page_title'),
         ])
       ),
-      m('div', { className: 'ShoutboxPage-chat' }, m(ShoutboxChat, { fill: true })),
+      m('div', { className: 'ShoutboxPage-chat' }, m(ShoutboxChat as unknown as Mithril.ComponentTypes<ShoutboxChatAttrs>, { fill: true })),
     ]);
 
     return m(

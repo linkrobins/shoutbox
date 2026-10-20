@@ -65,7 +65,7 @@ export default class ShoutboxChat extends Component<ShoutboxChatAttrs> {
   }
 
   private _query() {
-    return app.store.find('shouts', { sort: '-createdAt', include: 'user' });
+    return app.store.find<Shout[]>('shouts', { sort: '-createdAt', include: 'user' });
   }
 
   private _newestFirst() {
@@ -153,7 +153,7 @@ export default class ShoutboxChat extends Component<ShoutboxChatAttrs> {
     if (!content || this.sending) return;
     this.sending = true;
     app.store
-      .createRecord('shouts')
+      .createRecord<Shout>('shouts')
       .save({ content })
       .then((shout: Shout) => {
         if (this._newestFirst()) this.shouts.unshift(shout);
