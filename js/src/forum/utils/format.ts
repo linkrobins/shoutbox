@@ -9,9 +9,11 @@ export function formatTime(value: Date | string | null | undefined): string {
   const d = value instanceof Date ? value : new Date(value);
   if (isNaN(d.getTime())) return '';
   const diff = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (diff < 60) return app.translator.trans('linkrobins-shoutbox.forum.widget.time_seconds', { count: diff }) as string;
-  if (diff < 3600) return app.translator.trans('linkrobins-shoutbox.forum.widget.time_minutes', { count: Math.floor(diff / 60) }) as string;
-  if (diff < 86400) return app.translator.trans('linkrobins-shoutbox.forum.widget.time_hours', { count: Math.floor(diff / 3600) }) as string;
+  if (diff < 60) return app.translator.trans('linkrobins-shoutbox.forum.widget.time_seconds', { count: diff }) as unknown as string;
+  if (diff < 3600)
+    return app.translator.trans('linkrobins-shoutbox.forum.widget.time_minutes', { count: Math.floor(diff / 60) }) as unknown as string;
+  if (diff < 86400)
+    return app.translator.trans('linkrobins-shoutbox.forum.widget.time_hours', { count: Math.floor(diff / 3600) }) as unknown as string;
   return d.toLocaleDateString((app as any).data?.locale || undefined);
 }
 
