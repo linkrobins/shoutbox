@@ -9,6 +9,7 @@ A shoutbox for [Flarum 2.0](https://flarum.org): a small live chat area your mem
 - **Reads in either direction.** Newest messages at the bottom (chat style) or at the top, with the typing box following the newest message so it is always next to the action.
 - **Limits shouts to 280 characters**, enforced in the browser and again on the server.
 - **Holds people to a cooldown** between shouts, so one person cannot flood the box.
+- **Lets members delete their own shouts**, and lets moderators delete anyone's.
 - **Prunes itself.** Only the newest N shouts are kept (500 by default), so the table cannot grow without limit on a busy forum.
 - **Fits your theme automatically** through Flarum's CSS custom properties, including a coloured letter avatar for members who have not set one.
 
@@ -41,10 +42,11 @@ Set in **Admin → Permissions**.
 
 | Permission | Who needs it |
 |---|---|
+| View the shoutbox | Who may see it at all. Granted to everyone (guests included) when you install or update, so nothing changes until you restrict it, for example to members only. |
 | Post shouts | Anyone you want to be able to write. Without it, the box is read only for them. |
 | Delete others' shouts | Moderators. Everyone can already delete their own shouts without this. |
 
-Reading the shoutbox is tied to Flarum's own **View forum** permission. If a group cannot view the forum, it gets no shouts at all rather than a partial list, so a private forum stays private.
+Reading needs both **View the shoutbox** and Flarum's own **View forum** permission. A group missing either gets no shouts at all, and no widget, nav link or page, rather than a partial list, so a private forum stays private. Guests who can view see the messages and a "Log in to shout" prompt in place of the typing box.
 
 ## How refreshing works
 
@@ -91,11 +93,17 @@ Check they have the **Post shouts** permission, and that they are not inside the
 
 ```
 composer require linkrobins/shoutbox
+```
+
+Then toggle it on in the admin panel's Extensions page. For the widget, open the `fof/forum-widgets-core` settings and place it where you want it.
+
+### Updating
+
+```
+composer update linkrobins/shoutbox
 php flarum migrate
 php flarum cache:clear
 ```
-
-Then enable **Link Robins Shoutbox** in **Admin → Extensions**. For the widget, open the `fof/forum-widgets-core` settings and place it where you want it.
 
 ## License
 
